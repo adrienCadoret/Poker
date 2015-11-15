@@ -2,8 +2,12 @@ package texasholdem;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
+
+import actions.*;
 
 public class Round {
 
@@ -45,6 +49,21 @@ public class Round {
 	 * Big blind
 	 */
 	private int bigBlind;
+	
+	/**
+	 * SmallBlind player
+	 */
+	private Player smallBlindPlayer;
+	
+	/**
+	 * BigBlind player
+	 */
+	private Player bigBlindPlayer;
+	
+	/**
+	 * The current bet / the biggest bet
+	 */
+	private int currentBet;
 	 
 	 
 	/*public Round(LinkedList<Player> players, Player dealer, int smallBlind){
@@ -66,12 +85,17 @@ public class Round {
 		this.tableCards = new ArrayList<Card>();
 		this.deck = new Deck();
 		this.pot = 0;
+		this.smallBlindPlayer = game.getSmallBlindPlayer();
+		this.bigBlindPlayer = game.getBigBlindPlayer();
 	}
 	
 	public void run() {
 		// pre-flop
 		 this.preflop();
 		 System.out.println(game.getGameStatistiks());
+		 for(Player player : currentPlayers){
+			 System.out.println(player.getPlayerStatistiks());
+		 }
 		 // flop
 		/* this.callFlop();
 		 this.runBetPhase();
@@ -94,28 +118,236 @@ public class Round {
 
 
 	private  void runBetPreflopPhase() {
-		// TODO Auto-generated method stub
+		System.out.println("===========     BET PREFLOP PHASE     ===========");
 		
+	    System.out.println(getRoundStatistiks());
+		
+		boolean sameBetForAllPlayers = false;
+
+		Player currentPlayer;
+		Action currentAction;
+		
+		Scanner actionScanner;
+		Scanner amountScanner;
+		
+		currentPlayer = this.getNext(getNext(getNext(dealer)));
+		
+		while(!sameBetForAllPlayers && currentPlayers.size()>1){
+			
+			actionScanner = new Scanner(System.in);
+		
+		    System.out.println(currentPlayer.getName()+" it's your turn ! \n"+
+		    "You can: 'FOLD', 'CALL', 'RAISE', 'ALLIN' ");
+		    switch (actionScanner.nextLine()) {
+		    
+			case "FOLD":
+				currentPlayer.setAction(new FoldAction());
+				if(this.actionIsPossible(currentPlayer)){
+					executeAction(currentPlayer);
+					currentPlayer = this.getNext(currentPlayer);
+				}
+				else
+					System.out.println("You can't do this action, replay");
+				break;
+			case "CALL":
+				currentPlayer.setAction(new CallAction());
+				if(this.actionIsPossible(currentPlayer)){
+					executeAction(currentPlayer);
+					currentPlayer = this.getNext(currentPlayer);
+				}
+				else
+					System.out.println("You can't do this action, replay");
+				break;
+			case "RAISE":
+				System.out.println("Enter raise amount:");
+				amountScanner = new Scanner(System.in);
+				currentPlayer.setAction(new RaiseAction(amountScanner.nextInt()));
+				if(this.actionIsPossible(currentPlayer)){
+					executeAction(currentPlayer);
+					currentPlayer = this.getNext(currentPlayer);
+				}
+				else
+					System.out.println("You can't do this action, replay");
+				break;
+			case "ALLIN":
+				currentPlayer.setAction(new AllInAction());
+				if(this.actionIsPossible(currentPlayer)){
+					executeAction(currentPlayer);
+					currentPlayer = this.getNext(currentPlayer);
+				}
+				else
+					System.out.println("You can't do this action, replay");
+				break;
+
+			default:
+			    System.out.println("Autre chance !");
+				break;
+			}
+		    
+			sameBetForAllPlayers = hasSameBet(currentPlayers);
+		}
+		
+		System.out.println("==========================   End of BET PREFLOP PHASE =================================");
+	}
+	
+	private boolean hasSameBet(LinkedList<Player> playersList) {
+		int bet = playersList.getFirst().getBet();
+		for(Player player : playersList){
+			if(player.getBet() != bet)
+				return false;
+		}
+		return true;
 	}
 
-	private  void distributeCards() {
-		// TODO Auto-generated method stub
+	/**
+	 * Check if action is correct
+	 * @return boolean
+	 */
+	public boolean actionIsPossible(Player player){
+		switch (player.getAction().getName()) {
+		case "All-in":				
+			// if already all in, return false
+			if(player.isAllIn()) return false;
+			else 
+				return true;
+		case "Bet":
+			if(player.getCredit() >= player.getAction().getAmount())
+				return true;
+			else 
+				return false;
+		case "Call":
+			if(player.getCredit() >= this.currentBet - player.getBet())
+				return true;
+			else 
+				return false;
+		case "Check":
+			if(currentBet == 0) 
+				return true;
+			else 
+				return false;
+		case "Fold":
+			return true;
+		case "Raise":
+			if(player.getCredit() >= (this.currentBet - player.getBet()) + player.getAction().getAmount())
+				return true;
+			else 
+				return false;
+			
+		default:
+			return false;
+		}
 		
 	}
+	
+	public Player getNext(Player prevPlayer){
+		
+		if(prevPlayer.equals(currentPlayers.getLast())) 
+			return currentPlayers.getFirst();
+		else{
+			int prevPlayerIndex = currentPlayers.indexOf(prevPlayer);
+			return currentPlayers.get(prevPlayerIndex+1);
+		}
+		
+	}
+		
+	private void executeAction(Player player){
+		int bet;
+			switch (player.getAction().getName()) {
+			case "All-in":				
+				// changes the player state
+				bet = player.getCredit();
+				player.payCash(player.getCredit());
+				player.setBet(player.getBet()+bet);
+				// changes the round state
+				actualizeCurrentBet(bet);
+				
+				break;
+			case "Bet":
+				// changes the player state
+				bet = player.getAction().getAmount();
+				player.payCash(bet);
+				player.setBet(player.getBet()+bet);
+				// changes the round state
+				actualizeCurrentBet(bet);
+				break;
+			case "Call":
+				// changes the player state
+				bet = this.currentBet - player.getBet();
+				player.payCash(bet);
+				player.setBet(player.getBet()+bet);
+				// changes the round state
+				actualizeCurrentBet(bet);
+				break;
+			case "Check":
+				// changes nothing for player and for round
+				break;
+			case "Fold":
+				// just remove player to the currentPlayers list
+				this.currentPlayers.remove(player);
+				break;
+			case "Raise":
+				// changes the player state
+				bet = (this.currentBet - player.getBet()) + player.getAction().getAmount();
+				player.payCash(bet);
+				player.setBet(player.getBet()+bet);
+				// changes the round state
+				actualizeCurrentBet(bet);
+				break;
+
+			default:
+				System.out.println("No action is defined");
+				break;
+			}
+	}
+	
+	private void actualizeCurrentBet(int newBet){
+		if(newBet > this.currentBet){
+			this.currentBet = newBet;
+		}
+	}
+	
+	/*private Action stringToAction(String stringAction, int amount){
+		switch (stringAction) {
+		case "ALLIN":
+			return new AllInAction();
+		case "BET":
+			return new BetAction(amount);
+		case "CALL":
+			return new CallAction();
+		case "CHECK":
+			return new CheckAction();
+		case "FOLD":
+			return new FoldAction();
+		case "RAISE":
+			return new RaiseAction(amount);
+
+		default:
+			return null;
+		}
+	}*/
+
 
 	private void payBlinds() {
 		
-		game.getSmallBlindPlayer().payCash(game.getSmallBlind());
-		game.getBigBlindPlayer().payCash(game.getBigBlind());
+		smallBlindPlayer.payCash(game.getSmallBlind());
+		smallBlindPlayer.setBet(smallBlind);
+		bigBlindPlayer.payCash(game.getBigBlind());
+		bigBlindPlayer.setBet(bigBlind);
+		this.currentBet = this.bigBlind;
+		
+		System.out.println("SB: "+this.smallBlindPlayer);
+		System.out.println("BB: "+this.bigBlindPlayer);
 
 	}
 
 
 	private void preflop() {
+		System.out.println("===========     PREFLOP     ===========");
 		changeDealer();
 	 	payBlinds();
-	 	/*distributeCards();
-	 	runBetPreflopPhase();*/
+	 	deal();
+	 	runBetPreflopPhase();
+	 	callFlop();
 	}
 	
 	private  void changeDealer() {
@@ -133,7 +365,7 @@ public class Round {
 	}
 
 	private void runBetPhase() {
-		// TODO Auto-generated method stub
+		
 		
 	}
 
@@ -145,6 +377,7 @@ public class Round {
 		for (Player player : currentPlayers) {
 			player.getCards()[0] = deck.pop();
 			player.getCards()[1] = deck.pop();
+			System.out.println(player.getPlayerStatistiks());
 		}
 	}
 	
@@ -157,6 +390,7 @@ public class Round {
 		tableCards.add(deck.pop());
 		tableCards.add(deck.pop());
 		tableCards.add(deck.pop());
+		System.out.println(this.displayTableCards());
 	}
 
 	/**
@@ -476,6 +710,29 @@ public class Round {
 			HandUtil.checkRanking(player, tableCards);
 		}
 	}
+	
+	public String getRoundStatistiks(){
+		
+		System.out.println("===========    ROUND STATS     ===========");
+		String ret = "";
+		
+		for(Player player : currentPlayers){
+			ret = ret + player.getPlayerStatistiks() + "\n";	
+		}
+		ret = ret + this.dealer.getName() + " has the button/is the dealer \n";
+		ret = ret + "Current bet : "+this.currentBet;
+		
+		return ret;
+	}
+	
+	public String displayTableCards(){
+		String ret = "";
+		for(Card card : tableCards){
+			ret = ret + card.toString() + "   ";	
+		}
+		return ret;
+	}
+	
 
 	
 	 

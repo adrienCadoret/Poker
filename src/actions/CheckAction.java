@@ -11,7 +11,7 @@ public class CheckAction extends Action {
     /**
      * Constructor.
      */
-    CheckAction() {
+	public CheckAction() {
         super("Check", "checks");
     }
     

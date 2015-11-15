@@ -137,64 +137,35 @@ public class Game{
 		this.dealer = dealer;
 	}
 	
-	public String getGameStatistiks(){
-		String ret = "";
+
+	public Player getNext(Player prevPlayer){
 		
-		for(Player player : players){
-			ret = ret + player.getName()+": $"+player.getCredit() + "\n";	
+		if(prevPlayer.equals(players.getLast())) 
+			return players.getFirst();
+		else{
+			int prevPlayerIndex = players.indexOf(prevPlayer);
+			return players.get(prevPlayerIndex+1);
 		}
-		ret = ret + this.getDealer().getName() + " has the button/is the dealer \n";
 		
-		return ret;
 	}
 	
-	public String getPlayerStatistiks(Player player){
-		String ret = "";
-		
-		ret = ret + player.getName()+": $"+player.getCredit() + "\n";	
-			
-		ret = ret + this.getDealer().getName() + " has the button/is the dealer \n";
-		
-		ret = ret + "Your cards: " + player.getCards()[0].toString() + " " + player.getCards()[1].toString() + "\n";
-		
-		return ret;
-	}
-
-
 	
 	public Player getSmallBlindPlayer(){
 		
-		Iterator<Player> it = players.iterator();
-		Player player = it.next();
-		
-		while(!player.equals(dealer)){
-			player = it.next();
-		}
-		if(it.hasNext())
-			return it.next(); 
-		else
-			return players.getFirst();
-			
+		return this.getNext(dealer);
 	}
 	
 	public Player getBigBlindPlayer(){
 		
-		Iterator<Player> it = players.iterator();
-		Player player = it.next();
 		
-		while(!player.equals(dealer)){
-			player = it.next();
-		}
-		if(it.hasNext()){
-			it.next();
-			if(it.hasNext())
-				return it.next(); 
-			else 
-				return players.getFirst();
-		}
-		else{
-			return players.get(1);
-		}			
+		return this.getNext(this.getSmallBlindPlayer());
+		
+	}
+	
+	
+	public Player getPlayerAfterBigBlind(){
+		
+		return this.getNext(this.getBigBlindPlayer());
 		
 	}
 	
@@ -226,5 +197,23 @@ public class Game{
 	public void setBigBlind(int bigBlind) {
 		this.bigBlind = bigBlind;
 	}
+	
+	public String getGameStatistiks(){
+		
+		System.out.println("===========     GAME STATS     ===========");
+		String ret = "";
+		
+		for(Player player : players){
+			ret = ret + player.getName()+": $"+player.getCredit() + "\n";	
+		}
+		ret = ret + this.getDealer().getName() + " has the button/is the dealer \n";
+		
+		return ret;
+	}
+	
+	public int getStartingCash() {
+		return startingCash;
+	}
+
 	
 }

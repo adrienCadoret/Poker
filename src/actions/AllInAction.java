@@ -11,7 +11,7 @@ public class AllInAction extends Action {
      * Constructor.
      */
 	
-	AllInAction() {
+	public AllInAction() {
         super("All-in", "goes all-in");
     }
 

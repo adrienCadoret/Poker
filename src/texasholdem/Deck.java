@@ -29,6 +29,7 @@ public class Deck{
 	public Deck() {
 		random = new Random();
 		fillDeck();
+		shuffle();
 	}
 
 	/**

@@ -2,6 +2,12 @@ package texasholdem;
 import java.util.List;
 
 import actions.Action;
+import actions.AllInAction;
+import actions.BetAction;
+import actions.CallAction;
+import actions.CheckAction;
+import actions.FoldAction;
+import actions.RaiseAction;
 
 /**
  * Class representing a poker player
@@ -229,6 +235,7 @@ public class Player{
 		this.action = action;
 	}
 	
+	
 	   /**
      * Indicates whether this player is all-in.
      * 
@@ -299,6 +306,17 @@ public class Player{
     public String toString(){
     	return this.name;
     }
+    
+    public String getPlayerStatistiks(){
+		String ret = "";
+		
+		ret = ret + this.getName()+" you have : $"+this.getCredit() + "\n";	
+		
+		ret = ret + "Your cards: " + this.getCards()[0].toString() + " " + this.getCards()[1].toString() + "\n";
+		
+		ret = ret + "Your bet: " + this.getBet() + "\n";
+		return ret;
+	}
 	
     
 	

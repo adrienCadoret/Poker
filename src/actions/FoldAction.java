@@ -11,7 +11,7 @@ public class FoldAction extends Action {
     /**
      * Constructor.
      */
-     FoldAction() {
+	public FoldAction() {
         super("Fold", "folds");
     }
     

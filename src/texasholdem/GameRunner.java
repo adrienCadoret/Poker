@@ -22,7 +22,7 @@ public class GameRunner {
 				 
 		System.out.println(game.getPlayers());
 		
-		/*checkGameForRunning();*/
+		if(canStartGame());
 		
 		/*startGame();*/
 				 
@@ -36,7 +36,6 @@ public class GameRunner {
 		
 		while(game.isRunning()){
 			round.run();
-			System.out.println(game.getGameStatistiks());
 			game.setRunning(false);
 		}
 				 
@@ -44,9 +43,11 @@ public class GameRunner {
 				 
 	}
 
-	private  void checkGameForRunning() {
-		// TODO Auto-generated method stub
-		
+	private boolean canStartGame() {
+		if(game.getPlayers().size()>=2 && game.getBigBlind()<game.getStartingCash()){
+			return true;
+		}
+		else return false;
 	}
 
 	
@@ -81,15 +82,16 @@ public class GameRunner {
 	private  void createGame() {
 		Scanner scanner = new Scanner(System.in);
 		
-        int smallBlind,bigBlind, initialCash;
+        int smallBlind=0,bigBlind=0, initialCash=0;
         
         System.out.println("Enter Small Blind:");
         smallBlind=scanner.nextInt();
         scanner.nextLine(); //This is needed to pick up the new line
         System.out.println("By default, the Big Blind equals to: "+smallBlind*2);
-        System.out.println("Enter Initial Cash gived to each player:");
-        initialCash=scanner.nextInt();
-        
+        while(initialCash < smallBlind*2){
+            System.out.println("Enter Initial Cash gived to each player (must be > bigBlind):");
+            initialCash=scanner.nextInt();
+        }
         game = new Game(smallBlind, initialCash);
 		
 	}

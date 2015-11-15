@@ -11,7 +11,7 @@ public class CallAction extends Action {
     /**
      * Constructor.
      */
-     CallAction() {
+	public CallAction() {
         super("Call", "calls");
     }
     

@@ -73,16 +73,66 @@ public class Card{
 	 */
 	@Override
 	public String toString() {
-		switch (suit) {
+		String suitString = "";
+		String rankString = "";
+		
+		switch (this.suit) {
 		case HEARTS:
-			return "\u0003" + rank.toString();
+			suitString = "\u2665";
+			break;
 		case DIAMONDS:
-			return "\u0004" + rank.toString();
+			suitString = "\u2666";
+			break;
 		case CLUBS:
-			return "\u0005" + rank.toString();
+			suitString = "\u2663";
+			break;
 		case SPADES:
-			return "\u0006" + rank.toString();
+			suitString = "\u2660";
+			break;
 		}
-		return null;
+		
+		switch (this.rank) {
+		case CARD_2:
+			rankString = "2";
+			break;
+		case CARD_3:
+			rankString = "3";
+			break;
+		case CARD_4:
+			rankString = "4";
+			break;
+		case CARD_5:
+			rankString = "5";
+			break;
+		case CARD_6:
+			rankString = "6";
+			break;
+		case CARD_7:
+			rankString = "7";
+			break;
+		case CARD_8:
+			rankString = "8";
+			break;
+		case CARD_9:
+			rankString = "9";
+			break;
+		case CARD_10:
+			rankString = "10";
+			break;
+		case JACK:
+			rankString = "JACK";
+			break;
+		case QUEEN:
+			rankString = "QUEEN";
+			break;
+		case KING:
+			rankString = "KING";
+			break;
+		case ACE:
+			rankString = "ACE";
+			break;
+		}
+		
+		return suitString+rankString;
 	}
 }
