@@ -17,7 +17,8 @@ public class Player{
 	private String name;
 	
 	/** Client application responsible for the actual behavior. */
-    private final Client client;
+	
+   /* private final Client client;*/
 	
     private boolean hasCards;
 	/**
@@ -60,9 +61,9 @@ public class Player{
 	 * Constructs the player
 	 * @param name
 	 */
-	public Player(String name, Client client){
+	public Player(String name /*, Client client*/){
 		this.name = name;
-		this.client = client;
+		/*this.client = client;*/
 		hasCards = false;
 	}
 	
@@ -176,9 +177,9 @@ public class Player{
      * 
      * @return The client.
      */
-    public Client getClient() {
+   /* public Client getClient() {
         return client;
-    }
+    }*/
 
 	/**
 	 * Gets the credit 
@@ -293,6 +294,12 @@ public class Player{
     public void win(int amount) {
         credit += amount;
     }
+    
+    
+    public String toString(){
+    	return this.name;
+    }
 	
+    
 	
 }

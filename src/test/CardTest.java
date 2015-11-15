@@ -1,5 +1,6 @@
 package test;
 
+
 import org.junit.Test;
 
 import junit.framework.TestCase;
@@ -19,6 +20,7 @@ public class CardTest extends TestCase{
 		Card cardC = new Card(SuitEnum.SPADES, RankEnum.KING);
 		assertFalse(cardA.getRankToInt().equals(cardC.getRankToInt()));
 	}
+	
 
 	@Test
 	public void testEquals() {

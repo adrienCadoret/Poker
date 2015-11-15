@@ -73,6 +73,16 @@ public class Card{
 	 */
 	@Override
 	public String toString() {
-		return "Suit: " + suit.toString() + ", Rank :" + rank.toString();
+		switch (suit) {
+		case HEARTS:
+			return "\u0003" + rank.toString();
+		case DIAMONDS:
+			return "\u0004" + rank.toString();
+		case CLUBS:
+			return "\u0005" + rank.toString();
+		case SPADES:
+			return "\u0006" + rank.toString();
+		}
+		return null;
 	}
 }
