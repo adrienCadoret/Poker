@@ -78,6 +78,7 @@ public class Card{
 		
 		switch (this.suit) {
 		case HEARTS:
+			// ASCII Code
 			suitString = "\u2665";
 			break;
 		case DIAMONDS:

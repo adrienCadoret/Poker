@@ -12,8 +12,8 @@ public class BigBlindAction extends Action {
      * Constructor.
      */
     
-	BigBlindAction() {
-        super("Big blind", "posts the big blind");
+	public BigBlindAction() {
+        super("Big-blind", "posts the big blind");
     }
     
 }

@@ -1,53 +1,84 @@
 package texasholdem;
 
-import java.util.LinkedList;
-import java.util.Random;
+
 import java.util.Scanner;
 
+/**
+ * This class allows to manage the game progress. 
+ * @author Cadoret Adrien
+ *
+ */
 public class GameRunner {
 	
+	/**
+	 * The game related to this
+	 */
 	private Game game;
 
-	
+	/**
+	 * Constructor
+	 */
 	public GameRunner(){
 	}
 	
+	/**
+	 * Runs the game and progresses it
+	 */
 	public void run(){
+		
+		Round round;
+		
 		// Initialize the whole game 
 		createGame();
-			 
-		System.out.println(game.toString());
-			 
 		addPlayers();
 				 
 		System.out.println(game.getPlayers());
 		
-		if(canStartGame());
-		
-		/*startGame();*/
-				 
-		randomlyInitDealer();
-				 
-		System.out.println(game.getGameStatistiks());
-		
-		Round round = game.createRound(); 
-		
-		game.setRunning(true);
-		
-		while(game.isRunning()){
+		checkStartGame();
+	
+		while(!game.hasWinner()){
+			round = game.createRound();
 			round.run();
-			game.setRunning(false);
+			game.setRoundNumber(game.getRoundNumber()+1);
+			game.getGameStatistiks();
 		}
-				 
-		/* System.out.println(game.getPlayerStatistiks(game.getPlayers().get(1)));*/
-				 
+		
+		System.out.println("THE WINNER IS : "+game.getWinner().getName());
+		
+		endGame();
+				 			 
 	}
 
-	private boolean canStartGame() {
-		if(game.getPlayers().size()>=2 && game.getBigBlind()<game.getStartingCash()){
-			return true;
+	/**
+	 * Allows to restart a game or quit the console
+	 */
+	private void endGame() {
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+        String answer;
+		
+        System.out.println("The game is done. Do you want to restart ? (Say 'YES' or 'NO')");
+        answer = scanner.nextLine();
+        if(answer.equals("YES")){
+        	this.run();
+        }
+        else if(answer.equals("NO")){
+        	System.out.println("Thanks you for playing ! Bye bye");
+        	System.exit(0);
+        }
+        else{
+        	this.endGame();
+        }
+        
+        
+		
+	}
+
+	private void checkStartGame() {
+		if(game.getPlayers().size()<2){
+			System.out.println("A game must have at less 2 players");
+			addPlayers();
 		}
-		else return false;
 	}
 
 	
@@ -58,12 +89,13 @@ public class GameRunner {
 		String name;
 		
 		while(addingPlayer){
+			@SuppressWarnings("resource")
 			Scanner scanner = new Scanner(System.in);
 	        
-	        System.out.println("Enter a player name:  (Enter 'finish' to run game)");
+	        System.out.println("Enter a player name:  (Enter 'start' to run game)");
 	        name=scanner.nextLine();
 	        
-	        if(name.equals("finish")){
+	        if(name.equals("start")){
 	        	addingPlayer = false;
 	        }
 	        else if(name instanceof String){
@@ -80,9 +112,10 @@ public class GameRunner {
 	}
 
 	private  void createGame() {
+		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(System.in);
 		
-        int smallBlind=0,bigBlind=0, initialCash=0;
+        int smallBlind=0, initialCash=0;
         
         System.out.println("Enter Small Blind:");
         smallBlind=scanner.nextInt();
@@ -96,11 +129,6 @@ public class GameRunner {
 		
 	}
 	
-	private  void randomlyInitDealer(){
-		Random randomizer = new Random();
-		Player dealer = game.getPlayers().get(randomizer.nextInt(game.getPlayers().size()));
-		game.setDealer(dealer);
-	}
 	
 
 }

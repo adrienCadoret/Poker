@@ -1,23 +1,15 @@
 package texasholdem;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Random;
 
 /**
- * Handles a game. From get winner to call flop, turn etc..
+ * Handles the creation of the game. 
  * @author Cadoret
  *
  */
 public class Game{
 
-	/**
-	 * One deck
-	 */
-	private Deck deck;
 	
 	/**
 	 * Players list
@@ -28,7 +20,6 @@ public class Game{
 	 * The small blind
 	 */
 	private int smallBlind;
-	
 
 	/**
 	 * The big blind
@@ -41,11 +32,6 @@ public class Game{
 	private Player dealer;
 	
 	/**
-	 * True while there is no final winner
-	 */
-	private boolean isRunning;
-	
-	/**
 	 * Cash given to each player before run the game.
 	 */
 	private int startingCash;
@@ -53,7 +39,6 @@ public class Game{
 	/**
 	 * Number of round
 	 */
-
 	private int roundNumber;
 
 	/**
@@ -63,25 +48,11 @@ public class Game{
 	 * @param startingCash
 	 */
 	public Game(int smallBlind, int startingCash) {
-		this.deck = new Deck();
 		this.smallBlind = smallBlind;
 		this.bigBlind = smallBlind*2;
 		this.startingCash = startingCash;
 		players = new LinkedList<Player>();
 		setRoundNumber(0);
-		
-	}
-	
-	/**
-	 * Distributes the pot to winners
-	 * @param game winners
-	 */
-	public void distributePot(List<Player> winners, int pot){
-		int winnersNum = winners.size();
-		int sharedGain = pot / winnersNum;  
-		for(Player winner : winners){
-			winner.win(sharedGain);
-		}
 	}
 	
 	/**
@@ -106,38 +77,47 @@ public class Game{
 	 * @param player to add
 	 */
 	public void addPlayer(Player player) {
-		players.add(player);
+		int id = 0;
+		if(!this.players.isEmpty()){
+			id = players.getLast().getId()+1;
+		}
+		player.setId(id);
 		player.setCredit(startingCash);
+		players.add(player);
+		
 	}
 	
 
-	public boolean isRunning() {
-		return isRunning;
-	}
-
-	public void setRunning(boolean isRunning) {
-		this.isRunning = isRunning;
-	}
-	
-	public String toString(){
-		return  "Players : "+this.players+"\n"+
-				"Small Blind : "+this.smallBlind+"\n"+
-				"Big Blind : "+this.bigBlind+"\n";
-	}
-
+	/**
+	 * Gets dealer
+	 * @return player who is dealer
+	 */
 	public Player getDealer() {
 		return dealer;
 	}
 	
-	public int getIndexOfDealer() {
-		return this.getPlayers().indexOf(this.dealer);
-	}
-
+	/**
+	 * Sets dealer 
+	 * @param dealer
+	 */
 	public void setDealer(Player dealer) {
 		this.dealer = dealer;
 	}
 	
+	/**
+	 * Gets index of dealer
+	 * @return an index
+	 */
+	public int getIndexOfDealer() {
+		return this.getPlayers().indexOf(this.dealer);
+	}
 
+
+	/**
+	 * Gets next player
+	 * @param prevPlayer
+	 * @return next Player
+	 */
 	public Player getNext(Player prevPlayer){
 		
 		if(prevPlayer.equals(players.getLast())) 
@@ -149,55 +129,99 @@ public class Game{
 		
 	}
 	
-	
-	public Player getSmallBlindPlayer(){
-		
-		return this.getNext(dealer);
-	}
-	
-	public Player getBigBlindPlayer(){
-		
-		
-		return this.getNext(this.getSmallBlindPlayer());
-		
-	}
-	
-	
-	public Player getPlayerAfterBigBlind(){
-		
-		return this.getNext(this.getBigBlindPlayer());
-		
-	}
-	
-	
+	/**
+	 * Creates a round
+	 * @return a Round
+	 */
 	public Round createRound(){
+		this.changeDealer();
 		return new Round(this);
 	}
 
+	/**
+	 * Changes the dealer
+	 */
+	private void changeDealer() {
+		if(this.getRoundNumber()!=0){
+			boolean newDealerIsFound = false;
+			
+			while(!newDealerIsFound){
+				if(this.getNext(dealer).getCredit() > 0){
+					this.setDealer(this.getNext(dealer));
+					newDealerIsFound = true;
+				}
+				else
+					this.setDealer(this.getNext(dealer));
+			}
+		}
+		else{
+			randomlySetDealer();
+
+		}
+		
+	}
+	
+	/**
+	 * Randomly set the dealer (used when it's the first round)
+	 */
+	private  void randomlySetDealer(){
+		Random randomizer = new Random();
+		Player dealer = this.getPlayers().get(randomizer.nextInt(this.getPlayers().size()));
+		this.setDealer(dealer);
+	}
+
+	/**
+	 * Gets number of rounds in game
+	 * @return
+	 */
 	public int getRoundNumber() {
 		return roundNumber;
 	}
 
+	/**
+	 * Sets number of rounds in game
+	 * @param roundNumber
+	 */
 	public void setRoundNumber(int roundNumber) {
 		this.roundNumber = roundNumber;
 	}
 	
+	/**
+	 * Gets small Blind
+	 * @return small blind
+	 */
 	public int getSmallBlind() {
 		return smallBlind;
 	}
 
+	/**
+	 * Sets the small blind
+	 * @param smallBlind
+	 */
 	public void setSmallBlind(int smallBlind) {
 		this.smallBlind = smallBlind;
 	}
 	
+	/**
+	 * Gets big Blind
+	 * @return big blind
+	 */
 	public int getBigBlind() {
 		return bigBlind;
 	}
 
+	/**
+	 * Sets the big blind
+	 * @param bigBlind
+	 */
 	public void setBigBlind(int bigBlind) {
 		this.bigBlind = bigBlind;
 	}
 	
+	/**
+	 * Gets some stats about the game
+	 * @return String representing the game
+	 */
 	public String getGameStatistiks(){
 		
 		System.out.println("===========     GAME STATS     ===========");
@@ -211,9 +235,58 @@ public class Game{
 		return ret;
 	}
 	
+	/**
+	 * Gets starting cash 
+	 * @return the starting cash
+	 */
 	public int getStartingCash() {
 		return startingCash;
 	}
+	
+	/**
+	 * Allow to know there is a game winner
+	 * @return true if there is, false else. 
+	 */
+	public boolean hasWinner(){
+		int numberPlayers=0;
+		for(Player player : players){
+			if(player.getCredit()>0)
+				numberPlayers++;
+		}
+		return (numberPlayers == 1) ? true : false;
+	}
+	
+	/**
+	 * This method is always if the method hasWinner returns true. 
+	 * @return winner Player
+	 */
+	public Player getWinner(){
+		for(Player player : players){
+			if(player.getCredit() > 0)
+				return player;
+		}
+		return null;
+	}
+	
+	/**
+	 * Gets the index related to an player Id
+	 * @param id
+	 * @return the index
+	 */
+	public int getIndexOfPlayerId(int id){
+		for(Player player : players){
+			if(player.getId() == id)
+				return players.indexOf(player);
+		}
+		return -1;
+	}
+	
+	public String toString(){
+		return  "Players : "+this.players+"\n"+
+				"Small Blind : "+this.smallBlind+"\n"+
+				"Big Blind : "+this.bigBlind+"\n";
+	}
+	
 
 	
 }

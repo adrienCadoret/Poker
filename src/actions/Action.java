@@ -22,9 +22,6 @@ public abstract class Action {
     /** Check. */
     public static final Action CHECK = new CheckAction();
     
-    /** Continue. */
-    public static final Action CONTINUE = new ContinueAction();
-    
     /** Fold. */
     public static final Action FOLD = new FoldAction();
     

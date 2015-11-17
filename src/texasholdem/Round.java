@@ -2,13 +2,18 @@ package texasholdem;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
 import actions.*;
 
+/**
+ * This class contains all things we need to progress a Round
+ * @author Cadoret Adrien
+ *
+ */
 public class Round {
 
 	 /**
@@ -16,24 +21,25 @@ public class Round {
 	  */
 	 private LinkedList<Player> currentPlayers;
 	 
-	 
+	 /**
+	  * Game attached to the Round
+	  */
 	 private Game game;
 	 
 	 /**
-		 * The pot
-		 */
+	 * The pot
+	 */
 	private int pot;
 		
-		/**
-		 * The dealer
-		 */
+	/**
+	 * The dealer
+	 */
 	private Player dealer;
 	
 	/**
 	 * The table cards
 	 */
 	private List<Card> tableCards;
-	 
 
 	/**
 	 * The Deck  
@@ -64,139 +70,241 @@ public class Round {
 	 * The current bet / the biggest bet
 	 */
 	private int currentBet;
-	 
-	 
-	/*public Round(LinkedList<Player> players, Player dealer, int smallBlind){
-		this.players = players;
-		this.dealer = dealer;
-		this.smallBlind = smallBlind;
-		this.bigBlind = smallBlind*2;
-		this.tableCards = new ArrayList<Card>();
-		this.deck = new Deck();
-		this.pot = 0;
-	}*/
 	
+	/**
+	 * Current action
+	 */
+	Action currentAction;
+	
+	/**
+	 * Current player
+	 */
+	Player currentPlayer;
+	
+	/**
+	 * True if it is the preflop, false else.
+	 */
+	private boolean isPreflop;
+	
+	 
+	/**
+	 * Empty round
+	 */
+	public Round(){}
+	
+	/**
+	 * Constructor
+	 * @param game
+	 */
 	public Round(Game game){
 		this.game = game;
-		this.currentPlayers = game.getPlayers();
-		this.dealer = game.getDealer();
 		this.smallBlind = game.getSmallBlind();
 		this.bigBlind = game.getBigBlind();
+		
+		LinkedList<Player> playersToClone = game.getPlayers();
+		this.currentPlayers = new LinkedList<Player>();
+		
+		for(Player player : playersToClone){
+			if(player.getCredit()>0){
+				System.out.println(player);
+				this.currentPlayers.add((Player)player.clone());
+				if(player.getId()==game.getDealer().getId())
+					this.dealer = this.getPlayers().getLast();
+			}
+		}
+		
+		this.smallBlindPlayer = getNext(dealer);
+		this.bigBlindPlayer = getNext(smallBlindPlayer);
 		this.tableCards = new ArrayList<Card>();
 		this.deck = new Deck();
 		this.pot = 0;
-		this.smallBlindPlayer = game.getSmallBlindPlayer();
-		this.bigBlindPlayer = game.getBigBlindPlayer();
 	}
 	
+	/**
+	 * Runs the Round
+	 */
 	public void run() {
+		
+		System.out.println(game.getGameStatistiks());
+		
 		// pre-flop
-		 this.preflop();
-		 System.out.println(game.getGameStatistiks());
+		 
+		 preflop();
 		 for(Player player : currentPlayers){
 			 System.out.println(player.getPlayerStatistiks());
 		 }
 		 // flop
-		/* this.callFlop();
-		 this.runBetPhase();
+		 callFlop();
+		 runBetPhase();
 		 // turn 
-		 this.betTurn();	
+		 betTurn();	
 		 runBetPhase();
 		 // river
-		 this.betRiver();
+		 betRiver();
 		 runBetPhase();
 		 // showdown
-		 this.showdown();
-		 game.distributePot();*/
+		 //showdown();
+		 List<Player> winners = RoundUtil.getWinner(currentPlayers, tableCards);
+		 for(Player winner : winners){
+			 System.out.println("Winner : "+winner.getName()+" with a "+winner.getHandEnum());
+		 }
+		 
+		 this.distributePot(winners);
+		 this.synchronizePlayersLists();
+		 
+		 System.out.println(game.getGameStatistiks());
 		
 	}
 	
-	private  void showdown() {
-		// TODO Auto-generated method stub
+	/**
+	 * Runs bet phase
+	 */
+	private  void runBetPhase() {
+		System.out.println("===========     BET PHASE     ===========");
 		
-	}
-
-
-	private  void runBetPreflopPhase() {
-		System.out.println("===========     BET PREFLOP PHASE     ===========");
-		
-	    System.out.println(getRoundStatistiks());
 		
 		boolean sameBetForAllPlayers = false;
-
-		Player currentPlayer;
-		Action currentAction;
+		boolean allHavePlayed = allHavePlayed();
 		
 		Scanner actionScanner;
 		Scanner amountScanner;
 		
-		currentPlayer = this.getNext(getNext(getNext(dealer)));
+		if(isPreflop) currentPlayer = this.getNext(getNext(getNext(dealer)));
+		else currentPlayer = this.getNext(dealer);
 		
-		while(!sameBetForAllPlayers && currentPlayers.size()>1){
+		
+		while((!sameBetForAllPlayers || !allHavePlayed) && !this.allAllIn() && this.getPlayers().size() > 1){
 			
 			actionScanner = new Scanner(System.in);
 		
+			if(!currentPlayer.isAllIn()){
+			
 		    System.out.println(currentPlayer.getName()+" it's your turn ! \n"+
-		    "You can: 'FOLD', 'CALL', 'RAISE', 'ALLIN' ");
+		    "You can: 'FOLD', 'CALL', 'RAISE', 'ALLIN', 'CHECK' OR 'BET' ");
 		    switch (actionScanner.nextLine()) {
 		    
 			case "FOLD":
 				currentPlayer.setAction(new FoldAction());
-				if(this.actionIsPossible(currentPlayer)){
-					executeAction(currentPlayer);
-					currentPlayer = this.getNext(currentPlayer);
-				}
-				else
-					System.out.println("You can't do this action, replay");
+				checkAndExecuteAction(currentPlayer);
 				break;
 			case "CALL":
 				currentPlayer.setAction(new CallAction());
-				if(this.actionIsPossible(currentPlayer)){
-					executeAction(currentPlayer);
-					currentPlayer = this.getNext(currentPlayer);
-				}
-				else
-					System.out.println("You can't do this action, replay");
+				checkAndExecuteAction(currentPlayer);
 				break;
 			case "RAISE":
 				System.out.println("Enter raise amount:");
 				amountScanner = new Scanner(System.in);
 				currentPlayer.setAction(new RaiseAction(amountScanner.nextInt()));
-				if(this.actionIsPossible(currentPlayer)){
-					executeAction(currentPlayer);
-					currentPlayer = this.getNext(currentPlayer);
-				}
-				else
-					System.out.println("You can't do this action, replay");
+				checkAndExecuteAction(currentPlayer);
 				break;
 			case "ALLIN":
 				currentPlayer.setAction(new AllInAction());
-				if(this.actionIsPossible(currentPlayer)){
-					executeAction(currentPlayer);
-					currentPlayer = this.getNext(currentPlayer);
-				}
-				else
-					System.out.println("You can't do this action, replay");
+				checkAndExecuteAction(currentPlayer);
+				break;
+			case "CHECK":
+				currentPlayer.setAction(new CheckAction());
+				checkAndExecuteAction(currentPlayer);
+				break;
+			case "BET":
+				System.out.println("Enter bet amount:");
+				amountScanner = new Scanner(System.in);
+				currentPlayer.setAction(new RaiseAction(amountScanner.nextInt()));
+				checkAndExecuteAction(currentPlayer);
 				break;
 
 			default:
-			    System.out.println("Autre chance !");
+			    System.out.println("Other chance !");
 				break;
 			}
 		    
-			sameBetForAllPlayers = hasSameBet(currentPlayers);
+			
+			}
+			else{
+				currentPlayer.setAction(new AllInAction());
+				currentPlayer = this.getNext(currentPlayer);
+			}
+			
+			sameBetForAllPlayers = hasSameBet();
+			allHavePlayed = allHavePlayed();
+
+			
+			
 		}
 		
-		System.out.println("==========================   End of BET PREFLOP PHASE =================================");
+		resetBetsAndActions();
+		System.out.println("==========================   End of BET PHASE =================================");
 	}
 	
-	private boolean hasSameBet(LinkedList<Player> playersList) {
-		int bet = playersList.getFirst().getBet();
-		for(Player player : playersList){
+
+	
+
+	/**
+	 * Checks if all players are AllIn
+	 * @return true if all are AllIn, false else.
+	 */
+	private boolean allAllIn() {
+		for(Player player : currentPlayers)
+			if(!player.isAllIn())
+				return false;
+		return true;
+	}
+
+	/**
+	 * Checks the bets equivalence 
+	 * @return true if all players have same bet, false else.
+	 */
+	private boolean hasSameBet() {
+		int bet = currentPlayers.getFirst().getBet();
+		for(Player player : currentPlayers){
 			if(player.getBet() != bet)
 				return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Checks if all players have played 
+	 * @return true if all players have played, false else.
+	 */
+	private boolean allHavePlayed(){
+		for(Player player : currentPlayers){
+			if(player.getAction() == null)
+				return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Reset all player action and their bet
+	 */
+	private void resetBetsAndActions(){
+		for(Player player : currentPlayers){
+			if(!(player.getAction() instanceof AllInAction)){
+				player.setAction(null);
+				player.setBet(0);
+			}
+		}
+		this.currentAction = null;
+		this.currentBet = 0;
+		this.currentPlayer = null;
+	}
+	
+	/**
+	 * Checks and Executes Action
+	 * @param player
+	 */
+	private void checkAndExecuteAction(Player player) {
+		if(this.actionIsPossible(player)){
+			executeAction(player);
+			currentAction = player.getAction();
+			System.out.println(player.getName() +" "+ currentAction.getVerb());
+			currentPlayer = this.getNext(currentPlayer);
+		}
+		else{
+			player.setAction(null);
+			System.out.println("You can't do this action, replay");
+		}
+		
 	}
 
 	/**
@@ -213,25 +321,45 @@ public class Round {
 		case "Bet":
 			if(player.getCredit() >= player.getAction().getAmount())
 				return true;
-			else 
+			else {
+				System.out.println("You don't have enough money");
 				return false;
+			}
 		case "Call":
 			if(player.getCredit() >= this.currentBet - player.getBet())
 				return true;
-			else 
+			else {
+				System.out.println("You don't have enough money");
 				return false;
+			}
 		case "Check":
 			if(currentBet == 0) 
 				return true;
-			else 
+			else {
+				System.out.println("You have to pay of fold yourself");
 				return false;
+			}
+
 		case "Fold":
 			return true;
 		case "Raise":
-			if(player.getCredit() >= (this.currentBet - player.getBet()) + player.getAction().getAmount())
+			if(player.getCredit() >= (this.currentBet - player.getBet()) + player.getAction().getAmount()
+				&& player.getAction().getAmount() >= this.bigBlind)
 				return true;
-			else 
-				return false;
+			else{
+				if(player.getCredit() < (this.currentBet - player.getBet()) + player.getAction().getAmount()){
+					System.out.println("You have to pay of fold yourself");
+					return false;
+				}
+				else if(player.getAction().getAmount() < this.bigBlind){
+					System.out.println("Your raise must be superior to the Big Blind");
+					return false;
+				}
+			}
+		case "Small-blind":
+			return true;
+		case "Big-blind":
+			return true;
 			
 		default:
 			return false;
@@ -239,33 +367,30 @@ public class Round {
 		
 	}
 	
-	public Player getNext(Player prevPlayer){
-		
-		if(prevPlayer.equals(currentPlayers.getLast())) 
-			return currentPlayers.getFirst();
-		else{
-			int prevPlayerIndex = currentPlayers.indexOf(prevPlayer);
-			return currentPlayers.get(prevPlayerIndex+1);
-		}
-		
-	}
-		
+	/**
+	 * Execute player action
+	 * @param player
+	 */
 	private void executeAction(Player player){
 		int bet;
 			switch (player.getAction().getName()) {
 			case "All-in":				
 				// changes the player state
 				bet = player.getCredit();
-				player.payCash(player.getCredit());
+				player.payCash(bet);
+				this.setPot(getPot()+bet);
 				player.setBet(player.getBet()+bet);
+				player.setNbrOfCallsOnAllIn(this.currentPlayers.size());
+				player.setCreditOnAllIn(bet);
 				// changes the round state
 				actualizeCurrentBet(bet);
 				
 				break;
-			case "Bet":
+			case "Bet":  
 				// changes the player state
 				bet = player.getAction().getAmount();
 				player.payCash(bet);
+				this.setPot(getPot()+bet);
 				player.setBet(player.getBet()+bet);
 				// changes the round state
 				actualizeCurrentBet(bet);
@@ -274,9 +399,8 @@ public class Round {
 				// changes the player state
 				bet = this.currentBet - player.getBet();
 				player.payCash(bet);
+				this.setPot(getPot()+bet);
 				player.setBet(player.getBet()+bet);
-				// changes the round state
-				actualizeCurrentBet(bet);
 				break;
 			case "Check":
 				// changes nothing for player and for round
@@ -284,91 +408,155 @@ public class Round {
 			case "Fold":
 				// just remove player to the currentPlayers list
 				this.currentPlayers.remove(player);
+				updatePlayerInGame(player);
 				break;
 			case "Raise":
 				// changes the player state
 				bet = (this.currentBet - player.getBet()) + player.getAction().getAmount();
 				player.payCash(bet);
+				this.setPot(getPot()+bet);
 				player.setBet(player.getBet()+bet);
 				// changes the round state
-				actualizeCurrentBet(bet);
+				actualizeCurrentBet(player.getAction().getAmount()+this.currentBet);
 				break;
 
+			case "Small-blind":
+				// changes the player state
+				player.payCash(smallBlind);
+				this.setPot(getPot()+smallBlind);
+				player.setBet(smallBlind);
+				// changes the round state
+				actualizeCurrentBet(smallBlind);
+				break;
+			case "Big-blind":
+				// changes the player state
+				player.payCash(bigBlind);
+				this.setPot(getPot()+bigBlind);
+				player.setBet(bigBlind);
+				// changes the round state
+				actualizeCurrentBet(bigBlind);
+				break;
 			default:
 				System.out.println("No action is defined");
 				break;
 			}
 	}
 	
+	
+	/**
+	 * Gets next player of a player
+	 * @param prevPlayer
+	 * @return the next player
+	 */
+	public Player getNext(Player prevPlayer){
+		if(prevPlayer.equals(currentPlayers.getLast())) 
+			return currentPlayers.getFirst();
+		else{
+			int prevPlayerIndex = currentPlayers.indexOf(prevPlayer);
+			Player ret =  currentPlayers.get(prevPlayerIndex+1);
+			return ret;
+		}
+
+	}
+		
+	/**
+	 * Actualizes the current bet (after an action)
+	 * @param newBet
+	 */
 	private void actualizeCurrentBet(int newBet){
 		if(newBet > this.currentBet){
 			this.currentBet = newBet;
 		}
 	}
-	
-	/*private Action stringToAction(String stringAction, int amount){
-		switch (stringAction) {
-		case "ALLIN":
-			return new AllInAction();
-		case "BET":
-			return new BetAction(amount);
-		case "CALL":
-			return new CallAction();
-		case "CHECK":
-			return new CheckAction();
-		case "FOLD":
-			return new FoldAction();
-		case "RAISE":
-			return new RaiseAction(amount);
 
-		default:
-			return null;
-		}
-	}*/
-
-
+	/**
+	 * Pays blinds
+	 */
 	private void payBlinds() {
 		
-		smallBlindPlayer.payCash(game.getSmallBlind());
-		smallBlindPlayer.setBet(smallBlind);
-		bigBlindPlayer.payCash(game.getBigBlind());
-		bigBlindPlayer.setBet(bigBlind);
-		this.currentBet = this.bigBlind;
+		//currentPlayer = smallBlindPlayer;
+		smallBlindPlayer.setAction(new SmallBlindAction());
+		currentPlayer = smallBlindPlayer;
+		checkAndExecuteAction(currentPlayer);
 		
-		System.out.println("SB: "+this.smallBlindPlayer);
-		System.out.println("BB: "+this.bigBlindPlayer);
+		currentPlayer = bigBlindPlayer;
+		currentPlayer.setAction(new BigBlindAction());
+		checkAndExecuteAction(currentPlayer);
 
 	}
 
-
+	/**
+	 * Runs preflop
+	 */
 	private void preflop() {
+		this.isPreflop = true;
 		System.out.println("===========     PREFLOP     ===========");
-		changeDealer();
 	 	payBlinds();
 	 	deal();
-	 	runBetPreflopPhase();
-	 	callFlop();
+	 	runBetPhase();
+	 	this.isPreflop = false;
 	}
 	
-	private  void changeDealer() {
-		LinkedList<Player> players = game.getPlayers(); 
-		if(game.getRoundNumber()!=0){
-			int dealerIndex = game.getIndexOfDealer();
-			if(dealerIndex == players.indexOf(players.getLast())){
-				game.setDealer(players.getFirst());
-			}
-			else{
-				game.setDealer(players.get(dealerIndex+1));
+
+	/**
+	 * Distributes the pot to winners
+	 * @param round winners
+	 */
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public void distributePot(List<Player> winners){
+		
+		List<Player> toRemove = new ArrayList<Player>();
+		
+		// Sort the winner list relating to the attribute isAllIn of each winner.
+		// All winners who are AllIn will be at the beginning of the list
+		Collections.sort(winners, new Comparator() {
+	
+		@Override
+		public int compare(Object o1, Object o2) {
+			Player p1 = (Player) o1;
+			Player p2 = (Player) o2;
+			
+			if(p1.isAllIn() && p2.isAllIn()) return 0;
+			else if(p1.isAllIn() && !p2.isAllIn()) return 1;
+			else if(!p1.isAllIn() && p2.isAllIn()) return -1;
+			return 0;
+		}
+	
+		});
+		
+		// If there is more than 1 winner 
+		if(winners.size() >= 2){
+			for(Player winner : winners){
+				if(winner.isAllIn()){
+					int gain = winner.getCreditOnAllIn()*winner.getNbrOfCallsOnAllIn();
+					System.out.println("GAIN IS "+gain);
+					if(this.pot >= gain){
+						winner.win(gain);
+						this.setPot(getPot()-gain);
+						toRemove.add(winner);
+					}
+					else{
+						winner.win(pot);
+						return;
+					}
+				}
 			}
 		}
 		
-	}
+		// When all AllIn winner cases are done, these are remove
+		winners.removeAll(toRemove);
+		if(this.pot>0){
+			// Recalculating of the winner list + shared pot if more than 1 winner
+			winners = RoundUtil.getWinner(winners, this.getTableCards());
+			int winnersNum = winners.size();
+			int sharedGain = pot / winnersNum;
+			for(Player winner : winners){
+				winner.win(sharedGain);
+			}
+		}
 
-	private void runBetPhase() {
-		
-		
 	}
-
 	
 	/**
 	 * deal = give two cards to each player
@@ -386,331 +574,105 @@ public class Round {
 	 * Call flop with one pop before
 	 */
 	public void callFlop() {
+		System.out.println("==========================   FLOP  =================================");
+		
+		System.out.println(getRoundStatistiks());
+
 		deck.pop();
 		tableCards.add(deck.pop());
 		tableCards.add(deck.pop());
 		tableCards.add(deck.pop());
-		System.out.println(this.displayTableCards());
+		System.out.println("The table cards : "+this.displayTableCards());
 	}
 
 	/**
 	 * Bets Turn 
 	 */
 	public void betTurn() {
+		System.out.println("==========================   TURN  =================================");
+		System.out.println(getRoundStatistiks());
+
 		deck.pop();
 		tableCards.add(deck.pop());
+		System.out.println("The table cards : "+this.displayTableCards());
 	}
 
 	/**
 	 * Bets river
 	 */
 	public void betRiver() {
+		System.out.println("==========================   RIVER  =================================");
+		System.out.println(getRoundStatistiks());
+
 		deck.pop();
 		tableCards.add(deck.pop());
+		System.out.println("The table cards : "+this.displayTableCards());
 	}
 
+	/**
+	 * Gets current players
+	 * @return the current players
+	 */
 	public LinkedList<Player> getPlayers() {
 		return currentPlayers;
 	}
 
+	/**
+	 * Sets the players
+	 * @param players
+	 */
 	public void setPlayers(LinkedList<Player> players) {
 		this.currentPlayers = players;
 	}
 	
-
+	/**
+	 * Gets deck
+	 * @return the deck
+	 */
 	public Deck getDeck() {
 		return deck;
 	}
 
-	public void setDeck(Deck deck) {
-		this.deck = deck;
-	}
-
+	/**
+	 * Gets the pot
+	 * @return the pot
+	 */
 	public int getPot() {
 		return pot;
 	}
 
+	/**
+	 * Sets the pot
+	 * @param pot
+	 */
 	public void setPot(int pot) {
 		this.pot = pot;
 	}
 	
+	/**
+	 * Gets table cards
+	 * @return table cards
+	 */
 	public List<Card> getTableCards() {
 		return tableCards;
 	}
 
+	/**
+	 * Sets the table cards
+	 * @param tableCards
+	 */
 	public void setTableCards(List<Card> tableCards) {
 		this.tableCards = tableCards;
 	}
 
+
+
+
 	
 	/**
-	 * Gets a winner or a winners list
-	 * @param players
-	 * @return
+	 * Gets Round Stats
+	 * @return the String representing it
 	 */
-	public List<Player> getWinner(LinkedList<Player> players) {
-		checkPlayersRanking(players);
-		List<Player> winnerList = new ArrayList<Player>();
-		Player winner = players.get(0);
-		int winnerRank = HandUtil.getRankingToInt(winner);
-		winnerList.add(winner);
-		boolean checked;
-		for (int i = 1; i < players.size(); i++) {
-			checked = false;
-			Player player = players.get(i);
-			int playerRank = HandUtil.getRankingToInt(player);
-			//Draw game
-			if (winnerRank == playerRank) {
-				if(winnerRank == HandEnum.ROYAL_FLUSH.ordinal() && !checked){
-					winnerList.add(player);
-					checked = true;
-				}
-				if(winnerRank == HandEnum.STRAIGHT_FLUSH.ordinal() && !checked ){
-
-					int winnerStraightFlushRank = HandUtil.getStraightFlush(winner, tableCards).get(0).getRankToInt();
-					int playerStraightFlushRank = HandUtil.getStraightFlush(player, tableCards).get(0).getRankToInt();
-					if(playerStraightFlushRank == winnerStraightFlushRank){
-						winnerList.add(player);
-					}
-					else if(playerStraightFlushRank > winnerStraightFlushRank ){
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					}	
-					checked = true;
-				}
-				if(winnerRank == HandEnum.FOUR_OF_A_KIND.ordinal() && !checked ){
-					List<Card> winnerFourList = HandUtil.getMergedCardList(winner, tableCards);
-					List<Card> playerFourList = HandUtil.getMergedCardList(player, tableCards);
-
-					int winnerFourRank = HandUtil.getFourOfAKind(winner, tableCards).get(0).getRankToInt();
-					int playerFourRank = HandUtil.getFourOfAKind(player, tableCards).get(0).getRankToInt();
-					if(playerFourRank == winnerFourRank){
-						winnerFourList.removeAll(HandUtil.getFourOfAKind(winner, tableCards));
-						int winnerHighCardRank = HandUtil.getHighCard(winnerFourList).getRankToInt();
-						playerFourList.removeAll(HandUtil.getFourOfAKind(player, tableCards));
-						int playerHighCardRank = HandUtil.getHighCard(playerFourList).getRankToInt();
-						if(playerHighCardRank == winnerHighCardRank){
-							winnerList.add(player);
-						}
-						else if(playerHighCardRank > winnerHighCardRank){
-							winner = player;
-							winnerList.clear();
-							winnerList.add(winner);
-						}
-					}
-					else if(playerFourRank > winnerFourRank ){
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					}	
-					checked = true;
-				}
-				if(winnerRank == HandEnum.FULL.ordinal() && !checked ){
-					int winnerFullRank = HandUtil.getThreeOfAKind(winner, tableCards).get(0).getRankToInt();
-					int playerFullRank = HandUtil.getThreeOfAKind(player, tableCards).get(0).getRankToInt();
-					if(playerFullRank > winnerFullRank ){
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					}
-					checked = true;
-				}
-				if(winnerRank == HandEnum.FLUSH.ordinal() && !checked){
-					Player highHandPlayer = checkHighCardWinner(winner, player);
-					if (highHandPlayer != null && !winner.equals(highHandPlayer)) {
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					} else if (highHandPlayer == null) {
-						//Draw in checkHighSequence and checkHighCardWinner
-						winnerList.add(player);
-					}
-					checked = true;
-				}
-				if(winnerRank == HandEnum.STRAIGHT.ordinal() && !checked){
-					Player highHandPlayer = checkHighCardWinner(winner, player);
-					if (highHandPlayer != null && !winner.equals(highHandPlayer)) {
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					} else if (highHandPlayer == null) {
-						//Draw in checkHighSequence and checkHighCardWinner
-						winnerList.add(player);
-					}
-					checked = true;
-				}
-				if(winnerRank == HandEnum.THREE_OF_A_KIND.ordinal() && !checked ){
-					List<Card> winnerThreeList = HandUtil.getMergedCardList(winner, tableCards);
-					List<Card> playerThreeList = HandUtil.getMergedCardList(player, tableCards);
-
-					int winnerThreeRank = HandUtil.getThreeOfAKind(winner, tableCards).get(0).getRankToInt();
-					int playerThreeRank = HandUtil.getThreeOfAKind(player, tableCards).get(0).getRankToInt();
-					if(playerThreeRank == winnerThreeRank){
-						winnerThreeList.removeAll(HandUtil.getThreeOfAKind(winner, tableCards));
-						int winnerHighCardRank = HandUtil.getHighCard(winnerThreeList).getRankToInt();
-						playerThreeList.removeAll(HandUtil.getThreeOfAKind(player, tableCards));
-						int playerHighCardRank = HandUtil.getHighCard(playerThreeList).getRankToInt();
-						if(playerHighCardRank == winnerHighCardRank){
-							winnerList.add(player);
-						}
-						else if(playerHighCardRank > winnerHighCardRank){
-							winner = player;
-							winnerList.clear();
-							winnerList.add(winner);
-						}
-					}
-					else if(playerThreeRank > winnerThreeRank ){
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					}	
-					checked = true;
-				}
-				if(winnerRank == HandEnum.TWO_PAIR.ordinal() && !checked){
-					List<Card> winnerTwoPair = HandUtil.getTwoPair(winner, tableCards);
-					List<Card> playerTwoPair = HandUtil.getTwoPair(player, tableCards);
-					int winnerTwoRank = HandUtil.getHighCard(winnerTwoPair).getRankToInt();
-					int playerTwoRank = HandUtil.getHighCard(playerTwoPair).getRankToInt();
-					if(playerTwoRank > winnerTwoRank){
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					}
-					else if (playerTwoRank == winnerTwoRank){
-						int sumWinnerTwoPair = HandUtil.sumRankingList(winnerTwoPair);
-						int sumPlayerTwoPair = HandUtil.sumRankingList(playerTwoPair);
-						
-						if(sumWinnerTwoPair == sumPlayerTwoPair){
-							int winnerAcolyteRank = HandUtil.getTwoPairAcolyte(winner, tableCards).getRankToInt();
-							int playerAcolyteRank = HandUtil.getTwoPairAcolyte(player, tableCards).getRankToInt();
-							if( playerAcolyteRank > winnerAcolyteRank){
-								winner = player;
-								winnerList.clear();
-								winnerList.add(winner);
-							}
-							else{
-								winnerList.add(player);
-							}
-						}
-						else if(sumPlayerTwoPair > sumWinnerTwoPair){
-							winner = player;
-							winnerList.clear();
-							winnerList.add(winner);
-						}
-					}
-					checked = true;
-				}
-				if(winnerRank == HandEnum.ONE_PAIR.ordinal() && !checked){
-					int winnerOnePairRank = HandUtil.getOnePair(winner, tableCards).get(0).getRankToInt();
-					int playerOnePairRank = HandUtil.getOnePair(player, tableCards).get(0).getRankToInt();
-
-					if(playerOnePairRank > winnerOnePairRank){
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					}
-					else if (winnerOnePairRank == playerOnePairRank){
-						Player highHandPlayer = checkHighCardWinner(winner, player);
-						if (highHandPlayer != null && !winner.equals(highHandPlayer)) {
-							winner = player;
-							winnerList.clear();
-							winnerList.add(winner);
-						} else if (highHandPlayer == null) {
-							//Draw in checkHighSequence and checkHighCardWinner
-							winnerList.add(player);
-						}
-					}
-					checked = true;
-				}
-				if(winnerRank == HandEnum.HIGH_CARD.ordinal() && !checked){
-					Player highHandPlayer = checkHighCardWinner(winner, player);
-					if (highHandPlayer != null && !winner.equals(highHandPlayer)) {
-						winner = player;
-						winnerList.clear();
-						winnerList.add(winner);
-					} else if (highHandPlayer == null) {
-						//Draw in checkHighSequence and checkHighCardWinner
-						winnerList.add(player);
-					}
-					checked = true;
-				}
-			
-			} 
-			else if (winnerRank < playerRank) {
-				winner = player;
-				winnerList.clear();
-				winnerList.add(winner);
-				checked = true;
-			}
-			winnerRank = HandUtil.getRankingToInt(winner);
-		}
-
-		return winnerList;
-	}
-	
-	/**
-	 * Compares the high card of two players
-	 * @param player1
-	 * @param player2
-	 * @return the winner
-	 */
-	@SuppressWarnings("unchecked")
-	private Player checkHighCardWinner(Player player1, Player player2) {
-		Player winner = compareHighCard(player1, player1.getHighCard(),
-				player2, player2.getHighCard());
-		if (winner == null) {
-			Card player1Card = HandUtil.getHighCard(player1,
-					Collections.EMPTY_LIST);
-			Card player2Card = HandUtil.getHighCard(player2,
-					Collections.EMPTY_LIST);
-			winner = compareHighCard(player1, player1Card, player2, player2Card);
-			if (winner != null) {
-				player1.setHighCard(player1Card);
-				player2.setHighCard(player2Card);
-			} else if (winner == null) {
-				player1Card = HandUtil.getSecondHighCard(player1, player1Card);
-				player2Card = HandUtil.getSecondHighCard(player2, player2Card);
-				winner = compareHighCard(player1, player1Card, player2,
-						player2Card);
-				if (winner != null) {
-					player1.setHighCard(player1Card);
-					player2.setHighCard(player2Card);
-				}
-			}
-		}
-		return winner;
-	}
-
-	/**
-	 * Compares High Card of two players
-	 * @param player1
-	 * @param player1HighCard
-	 * @param player2
-	 * @param player2HighCard
-	 * @return
-	 */
-	private Player compareHighCard(Player player1, Card player1HighCard,
-			Player player2, Card player2HighCard) {
-		if (player1HighCard.getRankToInt() > player2HighCard.getRankToInt()) {
-			return player1;
-		} else if (player1HighCard.getRankToInt() < player2HighCard
-				.getRankToInt()) {
-			return player2;
-		}
-		return null;
-	}
-	
-	/**
-	 * Checks the players ranking
-	 * @param players
-	 */
-	private void checkPlayersRanking(List<Player> players) {
-		for (Player player : players) {
-			HandUtil.checkRanking(player, tableCards);
-		}
-	}
-	
 	public String getRoundStatistiks(){
 		
 		System.out.println("===========    ROUND STATS     ===========");
@@ -720,11 +682,16 @@ public class Round {
 			ret = ret + player.getPlayerStatistiks() + "\n";	
 		}
 		ret = ret + this.dealer.getName() + " has the button/is the dealer \n";
-		ret = ret + "Current bet : "+this.currentBet;
+		ret = ret + "Current bet : "+this.currentBet + "\n";
+		ret = ret + "Pot : "+this.pot;
 		
 		return ret;
 	}
 	
+	/**
+	 * Gets the Table Cards
+	 * @return a String representing it
+	 */
 	public String displayTableCards(){
 		String ret = "";
 		for(Card card : tableCards){
@@ -732,6 +699,29 @@ public class Round {
 		}
 		return ret;
 	}
+	
+	/**
+	 * Synchronize the Game players list and the Round current players list (at the end of the round to set the credit correctly)
+	 */
+	private void synchronizePlayersLists(){
+		for(Player player : currentPlayers){
+			this.updatePlayerInGame(player);
+			
+		}
+	}
+	
+	/**
+	 * Synchronize a Game Player credit with the same player in Round (at the end of the round to set the credit correctly)
+	 * @param playerToUpdate
+	 */
+	private void updatePlayerInGame(Player playerToUpdate){
+		int credit = playerToUpdate.getCredit();
+		int id = playerToUpdate.getId();
+		int index = game.getIndexOfPlayerId(id);
+		Player updatedPlayer = game.getPlayers().get(index);
+		updatedPlayer.setCredit(credit);
+	}
+	
 	
 
 	

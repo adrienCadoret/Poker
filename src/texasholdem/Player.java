@@ -15,7 +15,7 @@ import actions.RaiseAction;
  *
  */
 
-public class Player{
+public class Player implements Cloneable{
 	
 	/**
 	 * Player name
@@ -26,7 +26,15 @@ public class Player{
 	
    /* private final Client client;*/
 	
-    private boolean hasCards;
+	/**
+	 * Unique ID for each player
+	 */
+	private int id;
+	
+   
+	
+	private boolean hasCards;
+	
 	/**
 	 * Player credit/cash
 	 */
@@ -34,11 +42,6 @@ public class Player{
 	
     /** Current bet. */
     private int bet;
-	
-	/**
-	 * True if is dealer, false else.
-	 */
-	private boolean isDealer;
 
 	/**
 	 * The cards which are in this player hand
@@ -62,6 +65,11 @@ public class Player{
 	
     /** Last action performed. */
     private Action action;
+    
+    private int creditOnAllIn;
+   
+
+	private int nbrOfCallsOnAllIn;
 	
 	/**
 	 * Constructs the player
@@ -203,22 +211,6 @@ public class Player{
 		this.credit = credit;
 	}
 
-	/**
-	 * Knows if a player is the game dealer
-	 * @return true if he is, false else.
-	 */
-	public boolean isDealer() {
-		return isDealer;
-	}
-
-	/**
-	 * Sets the player dealer 
-	 * @param isDealer
-	 */
-	public void setDealer(boolean isDealer) {
-		this.isDealer = isDealer;
-	}
-
 	public int getBet() {
 		return bet;
 	}
@@ -242,7 +234,7 @@ public class Player{
      * @return True if all-in, otherwise false.
      */
     public boolean isAllIn() {
-        return hasCards() && (this.getCredit() == 0);
+        return (this.getCredit() == 0);
     }
     
     /**
@@ -292,6 +284,14 @@ public class Player{
         this.credit -= amount;
     }
     
+    public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+    
     /**
      * Wins an amount of money.
      * 
@@ -310,13 +310,46 @@ public class Player{
     public String getPlayerStatistiks(){
 		String ret = "";
 		
-		ret = ret + this.getName()+" you have : $"+this.getCredit() + "\n";	
+		ret = ret + this.getName()+" (id:"+this.getId()+") you have : $"+this.getCredit() + "\n";	
 		
 		ret = ret + "Your cards: " + this.getCards()[0].toString() + " " + this.getCards()[1].toString() + "\n";
 		
 		ret = ret + "Your bet: " + this.getBet() + "\n";
 		return ret;
 	}
+    
+    public Object clone() {
+		Object o = null;
+		try {
+			// On récupère l'instance à renvoyer par l'appel de la 
+			// méthode super.clone()
+			o = super.clone();
+		} catch(CloneNotSupportedException cnse) {
+			// Ne devrait jamais arriver car nous implémentons 
+			// l'interface Cloneable
+			cnse.printStackTrace(System.err);
+		}
+		// on renvoie le clone
+		return o;
+	}
+
+	public int getNbrOfCallsOnAllIn() {
+		return nbrOfCallsOnAllIn;
+	}
+
+	public void setNbrOfCallsOnAllIn(int nbrOfCallsOnAllIn) {
+		this.nbrOfCallsOnAllIn = nbrOfCallsOnAllIn;
+	}
+	
+    public int getCreditOnAllIn() {
+		return creditOnAllIn;
+	}
+
+	public void setCreditOnAllIn(int creditOnAllIn) {
+		this.creditOnAllIn = creditOnAllIn;
+	}
+    
+    
 	
     
 	
