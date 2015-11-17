@@ -43,13 +43,13 @@ Flop, Turn et River avec un tour d'enchères à chaque phase.
 
 ## Architecture du projet
 
-# package **actions**
+#### package **actions**
 
 Ce package référence toutes les actions possibles qu'un joueur peut réaliser lors d'un tour d'enchères.
 Soient : Bet (miser), Check(checker), Raise(relancer), AllIn(tapis), Fold(se coucher), Call(suivre), SmallBlind (small Blind),
 (Big Blind)
 
-# package **texasholdem**
+#### package **texasholdem**
 
 -Ce package contient les classes élémentaires (Player, Card, Deck) qui représentent respectivement un joueur, une carte et paquet
 de cartes. 
@@ -75,7 +75,7 @@ la liste des joueurs du Game. Cette liste clônée ne sera utilisée qu'au sein 
 la liste des joueurs du Game est synchronisée avec la liste qui a été clôné précédemment. 
 De plus, de cette façon, l'ajout d'un joueur ou sa suppression sera bien plus facilement gérée."
 
-# package 'test'
+#### package 'test'
 
 Les tests unitaires des classes élémentaires Card, Player, Deck et Hand.
 Dans la classe WinnerTest, c'est la méthode getWinner de la classe Round qui a été testée. 
