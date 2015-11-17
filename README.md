@@ -82,7 +82,6 @@ Dans la classe WinnerTest, c'est la méthode getWinner de la classe Round qui a 
 
 ## Avancées à réaliser
 
-- Les tapis sont parfois mal gérés
 - Mise en place de l'architecture Client/Serveur
 - Développement de l'IHM
 - Implémentation d'un module d'IA
